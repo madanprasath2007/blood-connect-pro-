@@ -22,12 +22,11 @@ import EligibilityChecker from './components/EligibilityChecker';
 import Leaderboard from './components/Leaderboard';
 import HospitalStatusDashboard from './components/HospitalStatusDashboard';
 import CampaignGenerator from './components/CampaignGenerator';
-import { EmergencyRequest, AuthenticatedUser } from './services/types';
-import { getCurrentPosition, GeoCoords, startLocationWatch } from './services/locationService';
+import { EmergencyRequest, AuthenticatedUser, Donor } from './services/types';
+import { getCurrentPosition, GeoCoords } from './services/locationService';
 import { subscribeToNetwork, NetworkEvent } from './services/networkService';
 import { backendService } from './services/backendService';
 
-// Added missing export for AddNotificationType used by child components
 export type AddNotificationType = (text: string, type?: 'info' | 'success' | 'alert' | 'sync') => void;
 
 type TabType = 'feed' | 'scanner' | 'drives' | 'new-request' | 'register-donor' | 'my-stock' | 'donor-db' | 'allocation' | 'schedule' | 'eligibility' | 'leaderboard' | 'collection' | 'hospital-status' | 'campaign-studio';
@@ -38,7 +37,6 @@ const App: React.FC = () => {
   const [selectedRequest, setSelectedRequest] = useState<EmergencyRequest | null>(null);
   const [allRequests, setAllRequests] = useState<EmergencyRequest[]>([]);
   const [userLocation, setUserLocation] = useState<GeoCoords | null>(null);
-  const [newNotifPulse, setNewNotifPulse] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [systemStatus, setSystemStatus] = useState({ gps: 'waiting', cloud: 'online' });
@@ -48,7 +46,7 @@ const App: React.FC = () => {
   }, []);
 
   const chatContextSummary = useMemo(() => {
-    const pending = allRequests.filter(r => r.status === 'Pending').length;
+    const pending = allRequests.filter((r: EmergencyRequest) => r.status === 'Pending').length;
     return `System Status: ${allRequests.length} total requests, ${pending} unallocated. Role: ${user?.role}.`;
   }, [allRequests, user]);
 
@@ -71,11 +69,7 @@ const App: React.FC = () => {
     window.addEventListener('offline', handleOffline);
     refreshData();
     const unsubscribe = subscribeToNetwork((e: NetworkEvent) => {
-      if (e.type === 'GLOBAL_SOS') {
-        setNewNotifPulse(true);
-        refreshData();
-        setTimeout(() => setNewNotifPulse(false), 3000);
-      } else if (e.type === 'DATA_CHANGE') {
+      if (e.type === 'GLOBAL_SOS' || e.type === 'DATA_CHANGE') {
         refreshData();
       }
     });
@@ -187,7 +181,6 @@ const App: React.FC = () => {
             <NavButton tab="feed" icon={LayoutDashboard} label="Operations Feed" color="bg-red-600" />
             <NavButton tab="scanner" icon={Radar} label="Nearby Scanner" color="bg-slate-900" />
             <NavButton tab="leaderboard" icon={Trophy} label="Rankings" color="bg-amber-500" />
-            {/* Fix: Sparkles is now imported from lucide-react */}
             <NavButton tab="campaign-studio" icon={Sparkles} label="Campaign Studio" color="bg-indigo-600" />
           </div>
           <div className="flex-grow"></div>
@@ -195,7 +188,7 @@ const App: React.FC = () => {
         </nav>
 
         <section className="md:col-span-9">
-          {activeTab === 'feed' && <EmergencyFeed requests={allRequests} onMatch={setSelectedRequest} dengueMode={false} userLocation={userLocation} user={user} />}
+          {activeTab === 'feed' && <EmergencyFeed requests={allRequests} onMatch={(req: EmergencyRequest) => setSelectedRequest(req)} dengueMode={false} userLocation={userLocation} user={user} />}
           {activeTab === 'scanner' && <NearbyScanner initialLocation={userLocation} />}
           {activeTab === 'drives' && <BloodDriveList user={user} initialLocation={userLocation} />}
           {activeTab === 'new-request' && <HospitalRequestForm hospitalName={user.name} onSubmit={handleCreateRequest} isOffline={isOffline} addNotification={() => {}} />}
@@ -205,7 +198,7 @@ const App: React.FC = () => {
           {activeTab === 'allocation' && <BloodAllocation bankId={user.id} bankName={user.name} isOffline={isOffline} addNotification={() => {}} />}
           {activeTab === 'collection' && <BloodCollection bankId={user.id} bankName={user.name} userLocation={userLocation} isOffline={isOffline} addNotification={() => {}} />}
           {activeTab === 'schedule' && <DonationSchedule lastDonationDate="2025-12-12" bloodType="O+" onNavigateToDrives={() => setActiveTab('drives')} />}
-          {activeTab === 'eligibility' && <EligibilityChecker onVerified={(a: string) => {}} />}
+          {activeTab === 'eligibility' && <EligibilityChecker onVerified={(advice: string) => { console.log(advice); }} />}
           {activeTab === 'leaderboard' && <Leaderboard userLocation={userLocation} />}
           {activeTab === 'campaign-studio' && <CampaignGenerator />}
         </section>
