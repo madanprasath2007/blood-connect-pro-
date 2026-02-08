@@ -1,3 +1,4 @@
+
 import { Donor, BloodBank, AuthenticatedUser, UserRole, BloodType, EmergencyRequest, BloodBag } from './types';
 import { MOCK_DONORS, MOCK_BANKS, MOCK_HOSPITALS } from '../constants';
 import { broadcastToNetwork } from './networkService';
@@ -47,7 +48,6 @@ class BackendService {
       }
     };
     
-    // Inject Nandha Engineering Node into Initial State
     const extendedBanks = [...MOCK_BANKS, {
       id: 'nandha-01',
       institutionName: 'Nandha Engineering Hub',
@@ -207,7 +207,6 @@ class BackendService {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const otpStore = JSON.parse(localStorage.getItem(DB_KEYS.OTP_STORE) || '{}');
     
-    // Fast Relay Logic for Nandha Engineering Node
     const isFastRelay = email === '24cc024@nandhaengg.org';
     const expiryDuration = isFastRelay ? FAST_RELAY_EXPIRY_MS : OTP_EXPIRY_MS;
     
@@ -215,20 +214,9 @@ class BackendService {
     otpStore[email] = { otp, expires };
     localStorage.setItem(DB_KEYS.OTP_STORE, JSON.stringify(otpStore));
     
-    // Professional SMTP Relay Metadata
-    window.dispatchEvent(new CustomEvent('RED_CONNECT_MAIL_INTERCEPT', { 
-      detail: { 
-        from: 'madanprasath2007@gmail.com',
-        email, 
-        otp, 
-        expires,
-        isFast: isFastRelay,
-        appToken: 'ryhp lvma jyjl phjd', // The provided SMTP app password
-        timestamp: new Date().toLocaleTimeString() 
-      } 
-    }));
+    console.log(`[Backend Service] OTP generated for ${email}: ${otp}`);
     
-    return { success: true, message: 'OTP Routed via Personal SMTP Relay', expires };
+    return { success: true, otp, message: 'OTP Generated for Relay', expires };
   }
 
   async verifyOtp(email: string, otp: string) {
